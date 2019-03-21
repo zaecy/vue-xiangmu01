@@ -26,10 +26,12 @@
 						<p class="price">
 							市场价: <del>￥{{ goodsinfo.market_price }}</del>&nbsp;&nbsp;销售价: <span class="now_price">￥{{ goodsinfo.sell_price }}</span>
 						</p>
-						<p>购买数量：<numbox></numbox></p>
+						<p>购买数量：<numbox @getCount="getSelectCount" :max="goodsinfo.stock_quantity"></numbox></p>
 						<p>
 							<mt-button type="primary" size="small">立即购买</mt-button>
 							<mt-button type="danger" size="small" @click="addToShopCar()">加入购物车</mt-button>
+
+							<!-- 这里若要完成获取numbox中数值，需要用到父子组件通讯。因为numbox是另外的组件 -->
 						</p>
 					</div>
 				</div>
@@ -67,7 +69,8 @@
 				id:this.$route.params.id,//将路由参数对象中的id挂载到data，方便后期调用
 				lunbotu:[], //轮播图的数据
 				goodsinfo:{}, //获取到的商品的信息
-				ballFlag: false // 小球的显示与隐藏状态
+				ballFlag: false, // 小球的显示与隐藏状态
+				selectCount: 1 //保存用户选中的商品数量，默认为1
 			};
 		},	
 		created(){
@@ -105,21 +108,46 @@
 			addToShopCar(){
 				//添加到购物车
 				this.ballFlag=!this.ballFlag;
-			}
-			,
-			beforeEnter(el) {
-			      // 入场动画开始之前，设置小球的起始状态
+				// { id:商品id ,count:要购买的数量, price:商品的单价, selected:true }
+				// 拼接出一个要保存到 store 中 car 数组里的商品信息对象
+				var goodsinfo = {
+					id:this.id, 
+					count:this.selectCount,
+					price:this.goodsinfo.sell_price, 
+					selected:true
+				};
+				// 调用 store 中的 mutations 来将商品加入购物车
+				this.$store.commit('addToCar', goodsinfo);
+			},
+			beforeEnter(el){
+			    // 入场动画开始之前，设置小球的起始状态
 			    el.style.transform = "translate(0, 0)";
 			},
-			enter(el,done){
+			enter(el,done) {
 				el.offsetWidth;
-				el.style.transform = "translate(93px, 425px)";
-                el.style.transition = "all 1s cubic-bezier(.4,-0.3,1,.68)";
+
+
+			    // 动态获取小球的横纵坐标
+		        const ballPos = el.getBoundingClientRect();
+		        // 动态获取徽标的横纵坐标【注意：这里获取徽标的位置，和双向数据绑定没有任何关系，所以，可以直接使用普通的DOM操作】
+		        // DOM操作的优势：不论要操作的元素属于哪个组件，只要这个元素属于document，那么就能够直接获取到
+		        const badgePos = document.getElementById("badge").getBoundingClientRect();
+		        const left = badgePos.left - ballPos.left;
+		        const top = badgePos.top - ballPos.top;
+		        // 动态设置 top 和 left 值
+		        el.style.transform = "translate(" + left + "px, " + top + "px)";
+		        el.style.transition = "all 1s cubic-bezier(.4,-0.3,0.5,.68)";
 				done();
 			},
 			afterEnter(el) {
 		      // 入场动画完成之后的回调函数
 		      this.ballFlag = !this.ballFlag;
+		    },
+		    getSelectCount(count){
+		    	//用一个变量 count 来接收 子组件 numbox上传来的数据
+		    	//当子组件把选中的数量传递给父组件的时候，把选中的值保存到 data 中的 selectCount 上
+		    	this.selectCount = count;
+		    	console.log("父组件拿到的数量值：" + this.selectCount);
 		    }
 		},
 		components:{
