@@ -45,16 +45,75 @@ var store = new Vuex.Store({
 
 			// 为了持久化存储购物车的数据，可以把 购物车的商品，序列化出来，存储到 localStorage 中
 			localStorage.setItem('car', window.JSON.stringify(state.car))
+		},
+		updateGoodsInfo(state, goodsinfo){
+			//修改购物车中商品的数量值
+			state.car.some( item=> {
+				if(item.id == goodsinfo.id) {
+					item.count = parseInt(goodsinfo.count)
+					return true
+				}
+			})
+
+			//当修改完商品数量，把最新的购物车数据保存到本地存储中
+			localStorage.setItem('car', window.JSON.stringify(state.car))
+		},
+		removeFromCar(state, id){
+			//根基id，从store中的购物车中删除对应的那条商品数据
+			state.car.some((item, i) => {
+				if(item.id == id){
+					state.car.splice(i, 1)
+					return true;
+				}
+			})
+			//将删除完毕的最新的购物车数据同步到本地存储中
+			localStorage.setItem('car', window.JSON.stringify(state.car))
+		},
+		updateGoodsSelected(state, info){
+			state.car.some(item => {
+				if(item.id == info.id){
+					item.selected = info.selected
+				}
+			})
+
+			//把最新的所有购物车商品的状态保存到 store 中去
+			localStorage.setItem('car', window.JSON.stringify(state.car))
 		}
 	},  
 	getters:{  //this.$store.getters.***
 		//相当于计算属性，也相当于 filters
-		getAllCount(state){
-			 // 徽标中商品数量
+		getAllCount(state){ 
 		    var c = 0
 		    // getters 的特性，只要依赖的数据变化了，必然会重新计算 这个 getters 的值；
 		    state.car.forEach(item => c += item.count)
 		    return c
+		},
+		getGoodsCount(state){
+			var o = {}
+			state.car.forEach( item => {
+				o[item.id] = item.count
+			} )
+			return o
+		},
+		getGoodsSelected(state){
+			var o = {}
+			state.car.forEach( item => {
+				o[item.id] = item.selected
+			} )
+			return o
+		},
+		getGoodsCountAndAmount(state){
+			var o ={
+				count:0, //勾选的数量
+				amount:0 //勾选的总价
+			}
+			state.car.forEach(item => {
+				if(item.selected){
+					o.count += item.count
+					o.amount += item.price * item.count
+				}
+			})
+			return o
 		}
 	}   
 })
